@@ -45,7 +45,7 @@ Outputs go to `output/epochs_100/`. Existing runs are not overwritten; choose an
 
 ## Results
 
-100-epoch runs, seed 42, best validation checkpoint; raw test scores (not multiplied by 100).
+100-epoch runs, seed 42, best validation checkpoint.
 
 | Model | CIDEr | BLEU-1 | BLEU-4 | METEOR | ROUGE-L |
 | --- | ---: | ---: | ---: | ---: | ---: |
