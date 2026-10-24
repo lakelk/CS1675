@@ -1,0 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.8.0+cu128
+torchvision==0.23.0+cu128
+numpy==2.2.6
+Pillow==11.3.0
+PyYAML==6.0.2
+tokenizers==0.22.0
+pycocoevalcap==1.2
+pycocotools==2.0.10
+matplotlib==3.10.6
