@@ -15,10 +15,9 @@ All decoders and word embeddings are trained from scratch. B/C share cached visu
 Requires Linux/WSL, an NVIDIA CUDA GPU, Python 3.12, and Java (for PTB tokenization and METEOR scoring).
 
 ```bash
-conda create -n CS1675 python=3.12 pip
+conda create -n CS1675 -c conda-forge python=3.12 pip openjdk=17
 conda activate CS1675
 pip install -r requirements.txt
-sudo apt install default-jre
 ```
 
 Download and extract the image and text archives from the [Flickr8k mirror](https://github.com/jbrownlee/Datasets/releases/tag/Flickr8k):
@@ -39,19 +38,19 @@ python train.py --model B
 python train.py --model C
 ```
 
-Training runs 100 epochs; the highest validation CIDEr selects the checkpoint, then test evaluation uses greedy decoding. `--check` is a short correctness test, not training. Use `python train.py --model A --resume` to resume, or `python evaluate.py --model A` to re-evaluate. Replace A with B/C as needed.
+All models train for 100 epochs with batch size 512. The highest validation CIDEr selects the checkpoint, then test evaluation uses greedy decoding. `--check` is a short correctness test, not training. Use `python train.py --model A --resume` to resume, or `python evaluate.py --model A` to re-evaluate. Replace A with B/C as needed.
 
-Outputs: `output/epochs_100/`. Use `--resume` for an existing run or a new `output_dir` to restart. Training batch sizes must divide the effective batch size of 1024.
+Outputs: `output/batch512_100/`. Use `--resume` for an existing run or a new `output_dir` to restart.
 
 ## Results
 
-100-epoch runs, seed 42, best validation checkpoint.
+100-epoch runs, batch size 512, seed 42. Best validation checkpoints: A/B/C at epochs 28/35/22. Scores below are from the test set.
 
 | Model | CIDEr | BLEU-1 | BLEU-4 | METEOR | ROUGE-L |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| A | 0.1944 | 0.4846 | 0.0991 | 0.1389 | 0.3675 |
-| B | 0.4005 | 0.5697 | 0.1661 | 0.1848 | 0.4346 |
-| C | 0.4372 | 0.5732 | 0.1709 | 0.1910 | 0.4337 |
+| A | 0.1961 | 0.4786 | 0.0970 | 0.1469 | 0.3649 |
+| B | 0.4023 | 0.5801 | 0.1682 | 0.1858 | 0.4345 |
+| C | 0.4556 | 0.5857 | 0.1782 | 0.1892 | 0.4331 |
 
 These are system comparisons: A/B also differ in encoder trainability, and B/C in pooled versus spatial feature access.
 

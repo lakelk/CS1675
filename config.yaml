@@ -1,5 +1,5 @@
 data_root: ~/Data/CS1675
-output_dir: output/epochs_100
+output_dir: output/batch512_100
 seed: 42
 
 encoder: resnet18
@@ -36,12 +36,11 @@ min_learning_rate: 0.00003
 weight_decay: 0.0001
 gradient_clip: 1.0
 amp_dtype: float16
-# Gradient accumulation matches the effective batch.
-effective_batch_size: 1024
+effective_batch_size: 512
 # CUDA allocator limits in GiB.
-gpu_memory_gib: {A: 4.8, B: 2.2, C: 3.3}
-batch_sizes: {A: 256, B: 1024, C: 256}
-validation_batch_sizes: {A: 256, B: 512, C: 256}
+gpu_memory_gib: {A: 10.5, B: 10.5, C: 10.5}
+batch_sizes: {A: 512, B: 512, C: 512}
+validation_batch_sizes: {A: 512, B: 512, C: 512}
 num_workers: 4
 cpu_threads: 4
 checkpoint_metric: CIDEr
