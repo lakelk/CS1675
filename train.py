@@ -1,4 +1,4 @@
-"""Train and check the three Flickr8k captioning experiments."""
+"""Train and check the four Flickr8k captioning experiments."""
 
 import argparse
 from datetime import datetime, timezone
@@ -37,7 +37,7 @@ def memory_stats():
 
 def make_model(name, data, cfg):
     model = Captioner(name, data["vocab_size"], cfg).cuda()
-    if name == "A":
+    if name in ("A", "D"):
         model = model.to(memory_format=torch.channels_last)
     return model
 
@@ -71,13 +71,22 @@ def check(cfg, data, tokenizer):
                for key, value in b.decoder.state_dict().items())
     del a, b
 
-    for name in ("A", "B", "C"):
+    seed_all(cfg["seed"])
+    c = Captioner("C", data["vocab_size"], cfg)
+    seed_all(cfg["seed"])
+    d = Captioner("D", data["vocab_size"], cfg)
+    assert all(torch.equal(c.decoder.state_dict()[key], value)
+               for key, value in d.decoder.state_dict().items())
+    assert d.encoder is not None and all(p.requires_grad for p in d.encoder.parameters())
+    del c, d
+
+    for name in ("A", "B", "C", "D"):
         features = load_features(cfg, data, name)
         dataset = CaptionDataset(cfg, data, name, features=features)
         visual, inputs, targets = collate_captions([dataset[i] for i in (0, 1, 5)])
         model = make_model(name, data, cfg).train()
         visual, inputs, targets = visual.cuda(), inputs.cuda(), targets.cuda()
-        if name == "A":
+        if name in ("A", "D"):
             visual = visual.contiguous(memory_format=torch.channels_last)
         with torch.autocast("cuda", dtype=torch.float16):
             logits = model(visual, inputs)
@@ -87,11 +96,11 @@ def check(cfg, data, tokenizer):
         loss.backward()
         assert all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None)
         assert model.decoder.embedding.weight.grad is not None
-        if name == "A":
+        if name in ("A", "D"):
             assert model.encoder[0].weight.grad is not None
         else:
             assert model.encoder is None
-        if name == "C":
+        if name in ("C", "D"):
             assert "image_pe" not in dict(model.named_parameters())
             assert model.decoder.visual_projection.weight.grad is not None
             model.eval()
@@ -117,7 +126,7 @@ def check(cfg, data, tokenizer):
         assert not generated.eq(PAD).any() and not generated.eq(BOS).any()
         print(f"CHECK {name}: forward, gradients, decoding and masks passed", flush=True)
         del model, visual, inputs, targets, logits, loss, dataset, features
-        if name == "C":
+        if name in ("C", "D"):
             del first, second, short, long
         gc.collect()
         torch.cuda.empty_cache()
@@ -170,7 +179,7 @@ def train(name, cfg, resume=False):
     scaler = torch.amp.GradScaler("cuda")
     generator = torch.Generator().manual_seed(cfg["seed"])
     dataset = CaptionDataset(cfg, data, name, features=features)
-    workers = cfg["num_workers"] if name == "A" else 0
+    workers = cfg["num_workers"] if name in ("A", "D") else 0
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, generator=generator,
                         collate_fn=collate_captions, num_workers=workers, pin_memory=True,
                         persistent_workers=bool(workers),
@@ -201,7 +210,7 @@ def train(name, cfg, resume=False):
                for path in (Path(__file__).parent / file for file in
                             ("prepare.py", "models.py", "train.py", "evaluate.py", "requirements.txt"))}
     frozen_count = 0
-    if name != "A":
+    if name in ("B", "C"):
         cache = torch.load(Path(cfg["data_root"]) / cfg["feature_cache"],
                            map_location="cpu", mmap=True, weights_only=True)
         frozen_count = cache["encoder_parameters"]
@@ -241,7 +250,7 @@ def train(name, cfg, resume=False):
                 valid_tokens = int(targets.ne(PAD).sum())
                 seen += len(visual)
                 visual = visual.to("cuda", non_blocking=True)
-                if name == "A":
+                if name in ("A", "D"):
                     visual = visual.contiguous(memory_format=torch.channels_last)
                 inputs, targets = inputs.cuda(non_blocking=True), targets.cuda(non_blocking=True)
                 with torch.autocast("cuda", dtype=torch.float16):
@@ -337,7 +346,7 @@ def train(name, cfg, resume=False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.yaml")
-    parser.add_argument("--model", choices=["A", "B", "C"])
+    parser.add_argument("--model", choices=["A", "B", "C", "D"])
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()

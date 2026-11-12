@@ -37,9 +37,10 @@ def load_config(path="config.yaml"):
         "A": {"pretrained_encoder": False, "freeze_encoder": False, "decoder": "lstm"},
         "B": {"pretrained_encoder": True, "freeze_encoder": True, "decoder": "lstm"},
         "C": {"pretrained_encoder": True, "freeze_encoder": True, "decoder": "transformer"},
+        "D": {"pretrained_encoder": False, "freeze_encoder": False, "decoder": "transformer"},
     }
     if cfg["models"] != expected:
-        raise ValueError("The model definitions are fixed: A/B LSTM, C Transformer; B/C frozen")
+        raise ValueError("The model definitions are fixed: A/B LSTM, C/D Transformer; B/C frozen")
     if cfg["encoder"] != "resnet18" or cfg["pretrained_weights"] != "IMAGENET1K_V1":
         raise ValueError("Only ResNet-18 with ImageNet V1 cached features is supported")
     return cfg
@@ -50,6 +51,10 @@ def check_checkpoint_config(cfg, saved):
     ignored = {"data_root", "output_dir", "profile_batch_sizes"}
     current = {k: v for k, v in cfg.items() if k not in ignored}
     recorded = {k: v for k, v in saved.items() if k not in ignored}
+    # Adding D must not invalidate existing A/B/C checkpoints.
+    for key in ("models", "gpu_memory_gib", "batch_sizes", "validation_batch_sizes"):
+        current[key] = {name: value for name, value in current[key].items()
+                        if name in recorded[key]}
     if current != recorded:
         raise RuntimeError("Config differs from the recorded experiment")
 
@@ -249,7 +254,7 @@ def load_prepared(cfg):
 
 
 def load_features(cfg, data, model_name):
-    if model_name == "A":
+    if model_name in ("A", "D"):
         return None
     cache = torch.load(Path(cfg["data_root"]) / cfg["feature_cache"],
                        map_location="cpu", mmap=True, weights_only=True)
@@ -263,7 +268,7 @@ def load_features(cfg, data, model_name):
 class CaptionDataset(Dataset):
     def __init__(self, cfg, data, model_name, split="train", training=True, features=None):
         self.training, self.data = training, data
-        self.images = ImageDataset(cfg, data["image_ids"]) if model_name == "A" else None
+        self.images = ImageDataset(cfg, data["image_ids"]) if model_name in ("A", "D") else None
         self.features = features
         lookup = {name: i for i, name in enumerate(data["image_ids"])}
         self.records = data["train_records"] if training else [(lookup[name], name) for name in data["splits"][split]]

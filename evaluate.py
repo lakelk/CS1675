@@ -19,7 +19,7 @@ def generate_predictions(model, loader, tokenizer, cfg):
     predictions = {}
     for visual, names in loader:
         visual = visual.to("cuda", non_blocking=True)
-        if model.model_name == "A":
+        if model.model_name in ("A", "D"):
             visual = visual.contiguous(memory_format=torch.channels_last)
         with torch.autocast("cuda", dtype=torch.float16):
             generated = model.generate(visual, cfg["max_caption_words"]).cpu().tolist()
@@ -58,7 +58,7 @@ def score_predictions(data, predictions, full=False):
 
 def evaluation_loader(cfg, data, model_name, split, features):
     dataset = CaptionDataset(cfg, data, model_name, split=split, training=False, features=features)
-    workers = min(2, cfg["num_workers"]) if model_name == "A" else 0
+    workers = min(2, cfg["num_workers"]) if model_name in ("A", "D") else 0
     return DataLoader(dataset, batch_size=cfg["validation_batch_sizes"][model_name],
                       num_workers=workers, pin_memory=True, persistent_workers=bool(workers),
                       multiprocessing_context="spawn" if workers else None)
@@ -107,7 +107,7 @@ def plot_history(run_dir):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="config.yaml")
-    parser.add_argument("--model", choices=["A", "B", "C"], required=True)
+    parser.add_argument("--model", choices=["A", "B", "C", "D"], required=True)
     parser.add_argument("--split", choices=["val", "test"], default="test")
     args = parser.parse_args()
     cfg = load_config(args.config)
@@ -120,7 +120,7 @@ def main():
     data, tokenizer = load_prepared(cfg)
     features = load_features(cfg, data, args.model)
     model = Captioner(args.model, data["vocab_size"], cfg).cuda()
-    if args.model == "A":
+    if args.model in ("A", "D"):
         model = model.to(memory_format=torch.channels_last)
     model.load_state_dict(checkpoint["model"])
     del checkpoint

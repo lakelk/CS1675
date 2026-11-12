@@ -1,12 +1,13 @@
 # Flickr8k Image Captioning
 
-CS1675 course project: compare three captioning models.
+CS1675 course project: compare four captioning models.
 
 | Model | ResNet-18 encoder | Decoder |
 | --- | --- | --- |
 | A | Random initialization, trainable | LSTM |
 | B | ImageNet pretrained, frozen | LSTM |
 | C | ImageNet pretrained, frozen | Transformer |
+| D | Random initialization, trainable | Transformer |
 
 All decoders and word embeddings are trained from scratch. B/C share cached visual features; LSTM uses pooled features, Transformer uses 49 spatial tokens.
 
@@ -36,21 +37,23 @@ python train.py --check
 python train.py --model A
 python train.py --model B
 python train.py --model C
+python train.py --model D
 ```
 
-All models train for 100 epochs with batch size 512. The highest validation CIDEr selects the checkpoint, then test evaluation uses greedy decoding. `--check` is a short correctness test, not training. Use `python train.py --model A --resume` to resume, or `python evaluate.py --model A` to re-evaluate. Replace A with B/C as needed.
+All models train for 100 epochs with batch size 512. The highest validation CIDEr selects the checkpoint, then test evaluation uses greedy decoding. `--check` is a short correctness test, not training. Use `python train.py --model A --resume` to resume, or `python evaluate.py --model A` to re-evaluate. Replace A with B/C/D as needed.
 
 Outputs: `output/batch512_100/`. Use `--resume` for an existing run or a new `output_dir` to restart.
 
 ## Results
 
-100-epoch runs, batch size 512, seed 42. Best validation checkpoints: A/B/C at epochs 28/35/22. Scores below are from the test set.
+100-epoch runs, batch size 512, seed 42. Best validation checkpoints: A/B/C/D at epochs 28/35/22/13. Scores below are from the test set.
 
 | Model | CIDEr | BLEU-1 | BLEU-4 | METEOR | ROUGE-L |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | A | 0.1961 | 0.4786 | 0.0970 | 0.1469 | 0.3649 |
 | B | 0.4023 | 0.5801 | 0.1682 | 0.1858 | 0.4345 |
 | C | 0.4556 | 0.5857 | 0.1782 | 0.1892 | 0.4331 |
+| D | 0.2068 | 0.4571 | 0.0914 | 0.1396 | 0.3499 |
 
 These are system comparisons: A/B also differ in encoder trainability, and B/C in pooled versus spatial feature access.
 

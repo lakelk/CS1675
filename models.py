@@ -138,14 +138,14 @@ class TransformerCaptionDecoder(nn.Module):
 class Captioner(nn.Module):
     def __init__(self, model_name, vocab_size, cfg):
         super().__init__()
-        if model_name not in ("A", "B", "C"):
+        if model_name not in ("A", "B", "C", "D"):
             raise ValueError(model_name)
         self.model_name = model_name
-        # Build A/B's identical decoder before A's random CNN consumes RNG.
-        self.decoder = (TransformerCaptionDecoder(vocab_size, cfg) if model_name == "C"
+        # Build paired decoders before the random CNN consumes RNG.
+        self.decoder = (TransformerCaptionDecoder(vocab_size, cfg) if model_name in ("C", "D")
                         else LSTMDecoder(vocab_size, cfg))
         # B/C deliberately have no encoder in the training process.
-        self.encoder = resnet_encoder() if model_name == "A" else None
+        self.encoder = resnet_encoder() if model_name in ("A", "D") else None
 
     def features(self, images_or_features):
         if self.encoder is not None:

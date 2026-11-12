@@ -29,6 +29,7 @@ models:
   A: {pretrained_encoder: false, freeze_encoder: false, decoder: lstm}
   B: {pretrained_encoder: true, freeze_encoder: true, decoder: lstm}
   C: {pretrained_encoder: true, freeze_encoder: true, decoder: transformer}
+  D: {pretrained_encoder: false, freeze_encoder: false, decoder: transformer}
 
 epochs: 100
 learning_rate: 0.0003
@@ -38,9 +39,9 @@ gradient_clip: 1.0
 amp_dtype: float16
 effective_batch_size: 512
 # CUDA allocator limits in GiB.
-gpu_memory_gib: {A: 10.5, B: 10.5, C: 10.5}
-batch_sizes: {A: 512, B: 512, C: 512}
-validation_batch_sizes: {A: 512, B: 512, C: 512}
+gpu_memory_gib: {A: 10.5, B: 10.5, C: 10.5, D: 10.5}
+batch_sizes: {A: 512, B: 512, C: 512, D: 512}
+validation_batch_sizes: {A: 512, B: 512, C: 512, D: 512}
 num_workers: 4
 cpu_threads: 4
 checkpoint_metric: CIDEr
